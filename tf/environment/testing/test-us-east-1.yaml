@@ -1,0 +1,41 @@
+database:
+  name: poc-docplanner
+  storage_type: "gp2"
+  engine: "postgres"
+  engine_version: "16.1"
+  instance_class: "db.t3.micro"
+  db_name: "poc"
+  username: "docplanner"
+  parameter_group_name:
+  prefix_length: 24
+  allocated_storage: 20
+  max_allocated_storage: 100
+  database_names:
+    - poc
+  users:
+    docplanner: "docplanner"
+eks:
+  cluster:
+    name: poc-docplanner
+    location: us-east-1
+    version : 1.30
+  node_group:
+    scaling_config:
+      desired_size: 1
+      max_size: 5
+      min_size: 0
+    capacity_type: ON_DEMAND
+    instance_types: 
+      - t3.small
+    update_config:
+      max_unavailable: 1
+    release_version: 1.30
+    node_group_names:
+      - testing
+    taints: []
+    labels: {
+      role: poc-docplan
+    }
+tags:
+  Owner: Feegow
+  Environment: dev
