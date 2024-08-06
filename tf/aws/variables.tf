@@ -81,3 +81,8 @@ variable "db_database" {
 #   description = "The name of the IAM role"
 #   type        = string
 # }
+
+variable "autoscaler_rolearn" {
+  description = "The name of the IAM role to cluster autoscaler"
+  type = string
+}
