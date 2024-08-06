@@ -10,17 +10,36 @@ spec:
   selector:
     matchLabels:
       app: docplanner-go
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
   template:
     metadata:
       labels:
         app: docplanner-go
     spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 3000
+        fsGroup: 2000
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - docplanner-go
+            topologyKey: "kubernetes.io/hostname"
       imagePullSecrets:
       - name: ghcr-secret
       containers:
       - name: go-app
         image: ghcr.io/magnonta/golang-poc
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8080
         startupProbe:
@@ -49,6 +68,17 @@ spec:
             cpu: "500m"
             memory: "256Mi"
 ---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: docplanner-go-pdb
+  namespace: poc
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: docplanner-go
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -61,17 +91,32 @@ spec:
   selector:
     matchLabels:
       app: docplanner-php
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
   template:
     metadata:
       labels:
         app: docplanner-php
     spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - docplanner-php
+            topologyKey: "kubernetes.io/hostname"
       imagePullSecrets:
       - name: ghcr-secret
       containers:
       - name: php-app
         image: ghcr.io/magnonta/php-poc:latest
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 80
         startupProbe:
@@ -99,6 +144,17 @@ spec:
           limits:
             cpu: "500m"
             memory: "256Mi"
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: docplanner-php-pdb
+  namespace: poc
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: docplanner-php
 ---
 apiVersion: v1
 kind: Service
@@ -163,13 +219,40 @@ spec:
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: docplanner-hpa
+  name: docplanner-go-hpa
   namespace: poc
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: docplanner
+    name: docplanner-go
+  minReplicas: 1
+  maxReplicas: 5
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 10
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 10
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: docplanner-php-hpa
+  namespace: poc
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: docplanner-php
   minReplicas: 1
   maxReplicas: 5
   metrics:
