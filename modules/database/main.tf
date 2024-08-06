@@ -68,18 +68,6 @@ resource "null_resource" "create_user" {
   depends_on = [aws_db_instance.rds_instance]
 }
 
-# resource "null_resource" "create_db_users" {
-#   count = length(var.db_users)
-
-#   provisioner "local-exec" {
-#     command = <<EOT
-#       mysql -h ${aws_db_instance.rds_instance.address} -u admin -p${aws_db_instance.rds_instance.password} -e "CREATE USER '${element(var.db_users, count.index).username}'@'%' IDENTIFIED BY '${element(var.db_users, count.index).password}'; GRANT ALL PRIVILEGES ON exampledb.* TO '${element(var.db_users, count.index).username}'@'%'; FLUSH PRIVILEGES;"
-#     EOT
-#   }
-
-#   depends_on = [aws_db_instance.rds_instance]
-# }
-
 resource "aws_security_group" "private_rds_sg" {
   name        = "${var.cluster_name}-private-rds-sg"
   description = "Security group for private RDS instance"
@@ -114,7 +102,7 @@ resource "aws_security_group" "public_rds_sg" {
   vpc_id      = var.vpc_id
 
   ingress {
-    from_port   = 5432 # Porta padrão do PostgreSQL
+    from_port   = 5432
     to_port     = 5432
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
